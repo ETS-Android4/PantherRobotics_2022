@@ -30,12 +30,20 @@ public class servoTest extends LinearOpMode {
 
         while(opModeIsActive())
         {
-            if(addMin.update(gamepad1.dpad_up)) { minPos += incrStep; }
-            else if(subMin.update(gamepad1.dpad_down)) { minPos -= incrStep; }
+            if(addMin.update(gamepad1.dpad_up)) {
+                minPos += incrStep;
+            }
+            else if(subMin.update(gamepad1.dpad_down)) {
+                minPos -= incrStep;
+            }
             minPos = Range.clip(minPos, 0., 1.);
 
-            if(addMax.update(gamepad1.dpad_right)) { maxPos += incrStep; }
-            else if(subMax.update(gamepad1.dpad_left)) { maxPos -= incrStep; }
+            if(addMax.update(gamepad1.dpad_right)) {
+                maxPos += incrStep;
+            }
+            else if(subMax.update(gamepad1.dpad_left)) {
+                maxPos -= incrStep;
+            }
             maxPos = Range.clip(maxPos, 0., 1.);
 
 
