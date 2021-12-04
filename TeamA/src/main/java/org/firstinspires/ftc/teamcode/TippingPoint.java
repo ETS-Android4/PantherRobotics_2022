@@ -23,8 +23,8 @@ public class TippingPoint extends LinearOpMode {
         servoMotor = hardwareMap.get(Servo.class, "testServo");
 
         lift.setDirection(DcMotor.Direction.FORWARD);
-        leftMotor.setDirection(DcMotor.Direction.REVERSE);
-        rightMotor.setDirection(DcMotor.Direction.FORWARD);
+        leftMotor.setDirection(DcMotor.Direction.FORWARD);
+        rightMotor.setDirection(DcMotor.Direction.REVERSE);
 
         lift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
@@ -47,7 +47,7 @@ public class TippingPoint extends LinearOpMode {
             leftMotor.setPower(leftPower);
             rightMotor.setPower(rightPower);
 
-            double v=0.8;
+            double v=0.42;
             if (gamepad1.left_trigger>0) {
                 lift.setPower(liftSpeed);
             }
