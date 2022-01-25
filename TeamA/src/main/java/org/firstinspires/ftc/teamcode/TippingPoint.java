@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+import utils.Toggle;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -10,21 +11,27 @@ import com.qualcomm.robotcore.util.Range;
 public class TippingPoint extends LinearOpMode {
 
     private DcMotor lift;
-    private DcMotor leftMotor;
-    private DcMotor rightMotor;
+    private DcMotor leftB;
+    private DcMotor rightF;
+    private DcMotor leftF;
+    private DcMotor rightB;
     private Servo servoMotor;
 
     @Override
     public void runOpMode() {
 
         lift = hardwareMap.get(DcMotor.class, "liftArm");
-        leftMotor = hardwareMap.get(DcMotor.class, "leftDrive");
-        rightMotor = hardwareMap.get(DcMotor.class, "rightDrive");
+        leftF = hardwareMap.get(DcMotor.class, "leftFront");
+        rightF = hardwareMap.get(DcMotor.class, "rightFront");
+        leftB = hardwareMap.get(DcMotor.class, "leftBack");
+        rightB = hardwareMap.get(DcMotor.class, "rightBack");
         servoMotor = hardwareMap.get(Servo.class, "testServo");
 
         lift.setDirection(DcMotor.Direction.FORWARD);
-        leftMotor.setDirection(DcMotor.Direction.FORWARD);
-        rightMotor.setDirection(DcMotor.Direction.REVERSE);
+        leftF.setDirection(DcMotor.Direction.REVERSE);
+        rightF.setDirection(DcMotor.Direction.FORWARD);
+        rightB.setDirection(DcMotor.Direction.FORWARD);
+        leftB.setDirection(DcMotor.Direction.REVERSE);
 
         lift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
@@ -32,20 +39,26 @@ public class TippingPoint extends LinearOpMode {
 
 
         waitForStart();
-        final double liftSpeed=0.5;
-
+        final double liftSpeed=1;
+        double driveMult = 0.5;
+        Toggle tog = new Toggle();
+        tog.update(false);
         while (opModeIsActive()) {
 
             double leftPower;
             double rightPower;
 
+
             double drive = gamepad1.left_stick_y;
             double turn = gamepad1.right_stick_x;
-            leftPower = Range.clip(drive + turn, -1.0, 1.0);
-            rightPower = Range.clip(drive - turn, -1.0, 1.0);
+            leftPower = Range.clip(drive + turn, -1.0, 1.0) * driveMult;
+            rightPower = Range.clip(drive - turn, -1.0, 1.0) * driveMult;
 
-            leftMotor.setPower(leftPower);
-            rightMotor.setPower(rightPower);
+            leftF.setPower(leftPower);
+            leftB.setPower(leftPower);
+            rightB.setPower(rightPower);
+            rightF.setPower(rightPower);
+
 
             double v=0.42;
             if (gamepad1.left_trigger>0) {
@@ -67,6 +80,14 @@ public class TippingPoint extends LinearOpMode {
                 servoMotor.setPosition(0);
             }
 
+            tog.update(this.gamepad1.a);
+
+            if(tog.getState()) {
+                driveMult = 1;
+            }
+            else {
+                driveMult = 0.5;
+            }
         }
     }
 }

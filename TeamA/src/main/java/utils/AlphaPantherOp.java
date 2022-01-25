@@ -147,85 +147,6 @@ public abstract class AlphaPantherOp extends LinearOpMode
      * @param yDistanceMm Distance to be moved in Y, in millimetres
      * @param speed Speed as a percentage of maximum motor speed. Range: 0 < speed <= 1
      */
-    protected void linearDrive(double xDistanceMm, double yDistanceMm, double speed)
-    {
-        if(speed <= 0) { return; }
-        if(!opModeIsActive()) { return; }
-
-        int lfTarget, rfTarget, lbTarget, rbTarget;
-
-        double displacementMagnitude = Math.sqrt((xDistanceMm*xDistanceMm) + (yDistanceMm*yDistanceMm));
-
-        double lf_rbTemp = Range.clip(yDistanceMm + xDistanceMm, -displacementMagnitude, displacementMagnitude) * COUNTS_PER_MM;
-        double rf_lbTemp = Range.clip(yDistanceMm - xDistanceMm, -displacementMagnitude, displacementMagnitude) * COUNTS_PER_MM;
-
-        double maxTemp = Math.max(lf_rbTemp, rf_lbTemp);
-        int maxDist = (int) maxTemp;
-
-        lfTarget = lfWheel.getCurrentPosition () + (int) lf_rbTemp;
-        rfTarget = rfWheel.getCurrentPosition () + (int) rf_lbTemp;
-        lbTarget = lbWheel.getCurrentPosition () + (int) rf_lbTemp;
-        rbTarget = rbWheel.getCurrentPosition () + (int) lf_rbTemp;
-
-        double lfSpeed = speed * ((double)lfTarget / maxDist);
-        double rfSpeed = speed * ((double)rfTarget / maxDist);
-        double lbSpeed = speed * ((double)lbTarget / maxDist);
-        double rbSpeed = speed * ((double)rbTarget / maxDist);
-
-        encoderDrive(lfTarget, rfTarget, lbTarget, rbTarget, lfSpeed, rfSpeed, lbSpeed, rbSpeed);
-
-    }
-
-    /**
-     * Method for driving the robot along any linear path
-     *
-     * @param driveDistanceMm Total displacement, must be greater than 0
-     * @param bearingDeg Bearing of robot, in degress. Range: 0 < bearing < 360
-     * @param speed Speed as a percentage of maximum motor speed. Range: 0 < speed <= 1
-     */
-    protected void linearDriveBearing(double driveDistanceMm, double bearingDeg, double speed)
-    {
-        driveDistanceMm = Math.abs(driveDistanceMm);
-
-        if(bearingDeg <= 0 || bearingDeg >= 360)
-        {
-            tankDrive(driveDistanceMm, speed);
-            return;
-        }
-        else if(bearingDeg == 90)
-        {
-            strafeDrive(driveDistanceMm, speed);
-            return;
-        }
-        else if(bearingDeg == 180)
-        {
-            tankDrive(-driveDistanceMm, speed);
-            return;
-        }
-        else if(bearingDeg == 270)
-        {
-            strafeDrive(-driveDistanceMm, speed);
-            return;
-        }
-
-        boolean xNeg;
-        boolean yNeg;
-        double normalisedAngle;
-
-        if(bearingDeg < 90)       { xNeg = false; yNeg = false; normalisedAngle = bearingDeg; }
-        else if(bearingDeg < 180) { xNeg = false; yNeg = true;  normalisedAngle = bearingDeg - 90; }
-        else if(bearingDeg < 270) { xNeg = true;  yNeg = true;  normalisedAngle = bearingDeg - 180; }
-        else                      { xNeg = true;  yNeg = false; normalisedAngle = bearingDeg - 270; }
-
-        // Trigonometry in order to figure out our X and Y components for displacement, then adjusted for polarity
-        double xDistance = (xNeg ? -1 : 1) * (driveDistanceMm * Math.cos(Math.toRadians(normalisedAngle)));
-        double yDistance = (yNeg ? -1 : 1) * (driveDistanceMm * Math.sin(Math.toRadians(normalisedAngle)));
-
-        linearDrive(xDistance, yDistance, speed);
-
-    }
-
-
 
 
 
@@ -282,9 +203,18 @@ public abstract class AlphaPantherOp extends LinearOpMode
         encoderDrive(newLfTarget, newRfTarget, newLbTarget, newRbTarget, speed, speed, speed, speed);
     }
 
+    private void checkOrientation() {
+// read the orientation of the robot
+        angles = this.imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        this.imu.getPosition();
+// and save the heading
+        curHeading = angles.firstAngle;
+    }
+
     protected double timeLeft()
     {
         return 30. - runtime.time();
     }
+
 
 }
