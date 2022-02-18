@@ -17,7 +17,7 @@ public abstract class AlphaPantherOp extends LinearOpMode
 {
     protected final ElapsedTime runtime = new ElapsedTime();
 
-    protected DcMotor lfWheel, rfWheel, lbWheel, rbWheel;
+    protected DcMotor lfWheel, rfWheel, lbWheel, rbWheel, lift;
 
     private BNO055IMU imu;
     private Orientation lastAngles = new Orientation();
@@ -54,13 +54,14 @@ public abstract class AlphaPantherOp extends LinearOpMode
     protected void initRobot()
     {
         // Mapping DcMotor objects to our real life (and gorgeously expensive) motors.
-        lfWheel = hardwareMap.get(DcMotor.class, "lf");
-        rfWheel = hardwareMap.get(DcMotor.class, "rf");
-        lbWheel = hardwareMap.get(DcMotor.class, "lb");
-        rbWheel = hardwareMap.get(DcMotor.class, "rb");
+        lfWheel = hardwareMap.get(DcMotor.class, "leftFront");
+        rfWheel = hardwareMap.get(DcMotor.class, "rightFront");
+        lbWheel = hardwareMap.get(DcMotor.class, "leftBack");
+        rbWheel = hardwareMap.get(DcMotor.class, "rightBack");
+        lift = hardwareMap.get(DcMotor.class, "liftArm");
 
-        lfWheel.setDirection(DcMotor.Direction.REVERSE);
-        lbWheel.setDirection(DcMotor.Direction.REVERSE);
+        rfWheel.setDirection(DcMotor.Direction.REVERSE);
+        rbWheel.setDirection(DcMotor.Direction.REVERSE);
 
         // Setting the PIDF values.
         // As far as you need to know, this tunes them for RUN_USING_ENCODERS
@@ -68,11 +69,13 @@ public abstract class AlphaPantherOp extends LinearOpMode
         PIDFmanager.setPIDF(rfWheel);
         PIDFmanager.setPIDF(lbWheel);
         PIDFmanager.setPIDF(rbWheel);
+        PIDFmanager.setPIDF(lift);
 
         lfWheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rfWheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         lbWheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rbWheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        lift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         m_initialised = true;
 
@@ -127,7 +130,7 @@ public abstract class AlphaPantherOp extends LinearOpMode
      * @param driveDistanceMm Distance you want to drive forwards, in millimetres. Negative value with perform reverse drive
      * @param speed Speed as a percentage of maximum motor speed. Range: 0 < speed <= 1
      */
-    protected void tankDrive(double driveDistanceMm, double speed)
+    protected void tankDrive(double driveDistanceMm, double speed, boolean correctHeading)
     {
         if(speed <= 0) { return; }
         if(!opModeIsActive()) { return; }
@@ -140,31 +143,18 @@ public abstract class AlphaPantherOp extends LinearOpMode
         lbTarget = lbWheel.getCurrentPosition() + (int) (driveDistanceMm * COUNTS_PER_MM);
         rbTarget = rbWheel.getCurrentPosition() + (int) (driveDistanceMm * COUNTS_PER_MM);
 
-        encoderDrive(lfTarget, rfTarget, lbTarget, rbTarget, Math.min(speed, 1.0));
+        encoderDrive(lfTarget, rfTarget, lbTarget, rbTarget, Math.min(speed, 1.0), correctHeading);
 
     }
 
-
-    /**
-     * Method for driving robot forwards or backwards
-     *
-     * @param driveDistanceMm Distance you want to drive forwards, in millimetres. Negative value with perform reverse drive
-     * @param speed Speed as a percentage of maximum motor speed. Range: 0 < speed <= 1
-     * @param reverseDrive Set to true to force reverse drive (backwards drive)
-     */
-    protected void tankDrive(double driveDistanceMm, double speed, boolean reverseDrive)
-    {
-        double negDriveDistance = - Math.abs(driveDistanceMm); // Forces distance into a negative
-        tankDrive(negDriveDistance, speed);
-    }
-
+    /*
     /**
      * Method for driving robot left and right
      *
      * @param driveDistanceMm Distance you want drive right, in millimetres. Negative values will drive leftwards
      * @param speed Speed as a percentage of maximum motor speed. Range: 0 < speed <= 1
      */
-    protected void strafeDrive(double driveDistanceMm, double speed)
+    /*protected void strafeDrive(double driveDistanceMm, double speed)
     {
         if(speed <= 0) { return; }
         if(!opModeIsActive()) { return; }
@@ -177,20 +167,26 @@ public abstract class AlphaPantherOp extends LinearOpMode
         rbTarget = rbWheel.getCurrentPosition() + (int) (driveDistanceMm * COUNTS_PER_MM);
 
         encoderDrive(lfTarget, rfTarget, lbTarget, rbTarget, speed);
-    }
+    }*/
 
 
 
 
 
 
-    private void encoderDrive(int newLfTarget, int newRfTarget, int newLbTarget, int newRbTarget, double lfSpeed, double rfSpeed, double lbSpeed, double rbSpeed)
+    private void encoderDrive(int newLfTarget, int newRfTarget, int newLbTarget, int newRbTarget, double lfSpeed, double rfSpeed, double lbSpeed, double rbSpeed, boolean correctHeading)
     {
         // Sets new targets for the drive motors
         lfWheel.setTargetPosition(newLfTarget);
         rfWheel.setTargetPosition(newRfTarget);
         lbWheel.setTargetPosition(newLbTarget);
         rbWheel.setTargetPosition(newRbTarget);
+
+        telemetry.addData("leftFront Target", newLfTarget);
+        telemetry.addData("rightFront Target", newRfTarget);
+        telemetry.addData("leftBack Target", newLbTarget);
+        telemetry.addData("rightBack Target", newRbTarget);
+        telemetry.update();
 
         // Turn on RUN_TO_POSITION
         lfWheel.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -207,6 +203,23 @@ public abstract class AlphaPantherOp extends LinearOpMode
         while(opModeIsActive() &&
                 (lfWheel.isBusy() && rfWheel.isBusy() && lbWheel.isBusy() && rbWheel.isBusy()))
         {
+            if(correctHeading)
+            {
+                double correction = checkDirection();
+                lfSpeed -= correction;
+                rfSpeed += correction;
+                lbSpeed -= correction;
+                rbSpeed += correction;
+                lfWheel.setPower(lfSpeed - correction);
+                rfWheel.setPower(rfSpeed + correction);
+                lbWheel.setPower(lbSpeed - correction);
+                rbWheel.setPower(rbSpeed + correction);
+            }
+            lfWheel.setPower(lfSpeed);
+            rfWheel.setPower(rfSpeed);
+            lbWheel.setPower(lbSpeed);
+            rbWheel.setPower(rbSpeed);
+
             /*telemetry.addData("Target Path (lf, rf, lb, rb)", "Running at: %f, %f, %f, %f", lfWheel.getTargetPosition(),  rfWheel.getTargetPosition(),  lbWheel.getTargetPosition(),  rbWheel.getTargetPosition());
             telemetry.addData("Target Path (lf, rf, lb, rb)", "Running at: %f, %f, %f, %f", lfWheel.getCurrentPosition(), rfWheel.getCurrentPosition(), lbWheel.getCurrentPosition(), rbWheel.getCurrentPosition());
 
@@ -231,9 +244,9 @@ public abstract class AlphaPantherOp extends LinearOpMode
         }
     }
 
-    private void encoderDrive(int newLfTarget, int newRfTarget, int newLbTarget, int newRbTarget, double speed)
+    private void encoderDrive(int newLfTarget, int newRfTarget, int newLbTarget, int newRbTarget, double speed, boolean correctHeading)
     {
-        encoderDrive(newLfTarget, newRfTarget, newLbTarget, newRbTarget, speed, speed, speed, speed);
+        encoderDrive(newLfTarget, newRfTarget, newLbTarget, newRbTarget, speed, speed, speed, speed, correctHeading);
     }
 
     /**
@@ -327,6 +340,29 @@ public abstract class AlphaPantherOp extends LinearOpMode
 
         // reset angle tracking on new heading.
         resetAngle();
+    }
+
+    /**
+     * See if we are moving in a straight line and if not return a power correction value.
+     * @return Power adjustment, + is adjust left - is adjust right.
+     */
+    private double checkDirection()
+    {
+        // The gain value determines how sensitive the correction is to direction changes.
+        // You will have to experiment with your robot to get small smooth direction changes
+        // to stay on a straight line.
+        double correction, angle, gain = .10;
+
+        angle = getAngle();
+
+        if (angle == 0)
+            correction = 0;             // no adjustment.
+        else
+            correction = -angle;        // reverse sign of angle for correction.
+
+        correction = correction * gain;
+
+        return correction;
     }
 
 }
