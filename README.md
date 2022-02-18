@@ -1,7 +1,7 @@
 ## NOTICE
 
 This is the DCSPD Panther Robotics codebase for the 2021-2022 season.
-Before running any programs, make sure to follow **step 7** of the following instructions[instructions](https://github.com/OpenFTC/EasyOpenCV#installation-instructions)(install that file into the FIRST directory of the Robot Controller phone).
+Before running any programs, make sure to follow **step 7** of the following [instructions](https://github.com/OpenFTC/EasyOpenCV#installation-instructions)(install that file into the FIRST directory of the Robot Controller phone).
 
 ## Welcome!
 This GitHub repository contains the source code that is used to build an Android app to control a *FIRST* Tech Challenge competition robot.  To use this SDK, download/clone the entire project to your local computer.
