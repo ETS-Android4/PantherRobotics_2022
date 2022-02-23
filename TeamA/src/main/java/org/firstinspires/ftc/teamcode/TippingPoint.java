@@ -35,8 +35,7 @@ public class TippingPoint extends LinearOpMode {
 
         lift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-
-
+        double liftInitPos = lift.getCurrentPosition();
 
         waitForStart();
         final double liftSpeed=1;
@@ -50,7 +49,7 @@ public class TippingPoint extends LinearOpMode {
 
 
             double drive = gamepad1.left_stick_y;
-            double turn = gamepad1.right_stick_x;
+            double turn = -gamepad1.right_stick_x;
             leftPower = Range.clip(drive + turn, -1.0, 1.0) * driveMult;
             rightPower = Range.clip(drive - turn, -1.0, 1.0) * driveMult;
 
@@ -61,10 +60,10 @@ public class TippingPoint extends LinearOpMode {
 
 
             double v=0.42;
-            if (gamepad1.left_trigger>0) {
+            if (gamepad1.left_trigger>0 && lift.getCurrentPosition()<liftInitPos-500) {
                 lift.setPower(liftSpeed);
             }
-            else if(gamepad1.right_trigger>0){
+            else if(gamepad1.right_trigger>0 && lift.getCurrentPosition()>liftInitPos-15800){
                 lift.setPower(-liftSpeed);
             }
 
@@ -72,11 +71,11 @@ public class TippingPoint extends LinearOpMode {
                 lift.setPower(0);
             }
 
-            if(gamepad1.dpad_up){
+            if(gamepad1.left_bumper){
                 servoMotor.setPosition(v);
 
             }
-            else if(gamepad1.dpad_down){
+            else if(gamepad1.right_bumper){
                 servoMotor.setPosition(0);
             }
 
@@ -88,6 +87,9 @@ public class TippingPoint extends LinearOpMode {
             else {
                 driveMult = 0.5;
             }
+
+            telemetry.addData("Thingie", lift.getCurrentPosition());
+            telemetry.update();
         }
     }
 }
