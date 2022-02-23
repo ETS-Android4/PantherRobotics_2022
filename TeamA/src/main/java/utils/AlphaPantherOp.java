@@ -36,22 +36,22 @@ public abstract class AlphaPantherOp extends LinearOpMode
 
      */
 
-    private static final double COUNTS_PER_MOTOR_REV = 1478.4;    // Number of ticks for every full revolution/rotation of the motor shaft - this is specific to our model of motors
-    private static final double DRIVE_GEAR_REDUCTION = 1.0;     // Depends on gearing ratio between motor and wheel
-    private static final double WHEEL_DIAMETER_MM = 78.0;     // For figuring circumference
-    private static final double COUNTS_PER_MM = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_MM * 3.1415);  //This is the amount of ticks we have every mm travelled by the wheel
+    protected static final double COUNTS_PER_MOTOR_REV = 1478.4;    // Number of ticks for every full revolution/rotation of the motor shaft - this is specific to our model of motors
+    protected static final double DRIVE_GEAR_REDUCTION = 1.0;     // Depends on gearing ratio between motor and wheel
+    protected static final double WHEEL_DIAMETER_MM = 78.0;     // For figuring circumference
+    protected static final double COUNTS_PER_MM = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_MM * 3.1415);  //This is the amount of ticks we have every mm travelled by the wheel
 
 
     // I'm marking my private non-constant members with the 'm_' prefix.
     // Please stick to this convention, tho you likely won't have to use many private members.
 
     private boolean m_initialised = false;
-    private boolean m_sleepPostMove = false; // Set to true for the robot to momentarily sleep after each move
-    private long m_sleepAmountMs = 100; // Sleeps for 100 milliseconds after each move
+    protected boolean m_sleepPostMove = false; // Set to true for the robot to momentarily sleep after each move
+    protected long m_sleepAmountMs = 100; // Sleeps for 100 milliseconds after each move
 
 
 
-    protected void initRobot()
+    protected void initRobot(boolean initIMU)
     {
         // Mapping DcMotor objects to our real life (and gorgeously expensive) motors.
         lfWheel = hardwareMap.get(DcMotor.class, "leftFront");
@@ -79,33 +79,34 @@ public abstract class AlphaPantherOp extends LinearOpMode
 
         m_initialised = true;
 
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        if(initIMU) {
+            BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
 
-        parameters.mode                = BNO055IMU.SensorMode.IMU;
-        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
-        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parameters.loggingEnabled      = false;
+            parameters.mode = BNO055IMU.SensorMode.IMU;
+            parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
+            parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+            parameters.loggingEnabled = false;
 
-        // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
-        // on a Core Device Interface Module, configured to be a sensor of type "AdaFruit IMU",
-        // and named "imu".
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
+            // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
+            // on a Core Device Interface Module, configured to be a sensor of type "AdaFruit IMU",
+            // and named "imu".
+            imu = hardwareMap.get(BNO055IMU.class, "imu");
 
-        imu.initialize(parameters);
+            imu.initialize(parameters);
 
-        telemetry.addData("Mode", "calibrating...");
-        telemetry.update();
+            telemetry.addData("Mode", "calibrating...");
+            telemetry.update();
 
-        // make sure the imu gyro is calibrated before continuing.
-        while (!isStopRequested() && !imu.isGyroCalibrated())
-        {
-            sleep(50);
-            idle();
+            // make sure the imu gyro is calibrated before continuing.
+            while (!isStopRequested() && !imu.isGyroCalibrated()) {
+                sleep(50);
+                idle();
+            }
+
+            telemetry.addData("Mode", "waiting for start");
+            telemetry.addData("imu calib status", imu.getCalibrationStatus().toString());
+            telemetry.update();
         }
-
-        telemetry.addData("Mode", "waiting for start");
-        telemetry.addData("imu calib status", imu.getCalibrationStatus().toString());
-        telemetry.update();
 
         waitForStart();
     }
