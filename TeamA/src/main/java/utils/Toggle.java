@@ -20,6 +20,8 @@ public class Toggle
         prev = curr;
         curr = newState;
 
+        // newState must be true
+        // the last input must have been false
         if(curr && !prev) //this means that an entire click has to be performed in order to change the state
         {
             state = !state;
