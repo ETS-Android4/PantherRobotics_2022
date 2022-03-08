@@ -60,9 +60,11 @@ public class TippingPoint extends LinearOpMode {
 
 
             double v=0.42;
-            if (gamepad1.left_trigger>0 && lift.getCurrentPosition()<liftInitPos-500) {
+            // lift down
+            if (gamepad1.left_trigger>0 && lift.getCurrentPosition()<liftInitPos-1000) {
                 lift.setPower(liftSpeed);
             }
+            // lift up
             else if(gamepad1.right_trigger>0 && lift.getCurrentPosition()>liftInitPos-15800){
                 lift.setPower(-liftSpeed);
             }
