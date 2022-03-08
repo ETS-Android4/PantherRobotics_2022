@@ -40,8 +40,13 @@ public class TippingPoint extends LinearOpMode {
         waitForStart();
         final double liftSpeed=1;
         double driveMult = 0.5;
-        Toggle tog = new Toggle();
-        tog.update(false);
+        Toggle slowToggle = new Toggle();
+        // set default speed to slow
+        slowToggle.update(true);
+
+        Toggle liftLimitToggle = new Toggle();
+        liftLimitToggle.update(true);
+
         while (opModeIsActive()) {
 
             double leftPower;
@@ -49,7 +54,8 @@ public class TippingPoint extends LinearOpMode {
 
 
             double drive = gamepad1.left_stick_y;
-            double turn = -gamepad1.right_stick_x;
+            double turn = (gamepad1.right_stick_x == 0) ? -gamepad1.left_stick_x
+                                                        : -gamepad1.right_stick_x;
             leftPower = Range.clip(drive + turn, -1.0, 1.0) * driveMult;
             rightPower = Range.clip(drive - turn, -1.0, 1.0) * driveMult;
 
@@ -60,35 +66,38 @@ public class TippingPoint extends LinearOpMode {
 
 
             double v=0.42;
-            if (gamepad1.left_trigger>0 && lift.getCurrentPosition()<liftInitPos-500) {
+            // lift downwards movement is positive
+            if (gamepad1.left_trigger>0 && (lift.getCurrentPosition()<liftInitPos-750 || !liftLimitToggle.getState())) {
                 lift.setPower(liftSpeed);
             }
-            else if(gamepad1.right_trigger>0 && lift.getCurrentPosition()>liftInitPos-15800){
+            // lift upwards movement is negative, downwards is positive
+            else if(gamepad1.right_trigger>0 && (lift.getCurrentPosition()>liftInitPos-15800 || !liftLimitToggle.getState())){
                 lift.setPower(-liftSpeed);
             }
-
             else{
                 lift.setPower(0);
             }
 
             if(gamepad1.left_bumper){
                 servoMotor.setPosition(v);
-
             }
             else if(gamepad1.right_bumper){
                 servoMotor.setPosition(0);
             }
 
-            tog.update(this.gamepad1.a);
+            slowToggle.update(this.gamepad1.a);
+            liftLimitToggle.update(this.gamepad1.x);
 
-            if(tog.getState()) {
-                driveMult = 1;
-            }
-            else {
+            if(slowToggle.getState()) {
                 driveMult = 0.5;
             }
+            else {
+                driveMult = 0.1;
+            }
 
-            telemetry.addData("Thingie", lift.getCurrentPosition());
+            telemetry.addData("Lift Position", lift.getCurrentPosition());
+            telemetry.addData("Slow Mode (A):", slowToggle.getState() ? "ON" : "OFF");
+            telemetry.addData("Lift Limit (X):", liftLimitToggle.getState() ? "ON" : "OFF");
             telemetry.update();
         }
     }
